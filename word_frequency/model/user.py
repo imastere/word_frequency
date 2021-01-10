@@ -15,10 +15,13 @@ import time
 # 出于安全原因，用户的原始密码将不被存储，密码在注册时被散列后存储到数据库中。使用散列密码的话，如果用户数据库不小心落入恶意攻击者的手里，他们也很难从散列中解析到真实的密码。
 # 密码 决不能 很明确地存储在用户数据库中。
 app.config['SECRET_KEY'] = 'imastere is very handsome'
+
+
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(32), index=True)
+    email = db.Column(db.String(32), index=True)
     password_hash = db.Column(db.String(128))
 
     def hash_password(self, password):
@@ -29,14 +32,29 @@ class User(db.Model):
 
     def generate_auth_token(self, expires_in=600):
         return jwt.encode(
-           {'id': self.id, 'exp': time.time() + expires_in},
+            {'id': self.id, 'exp': time.time() + expires_in},
             app.config['SECRET_KEY'], algorithm='HS256')
 
     @staticmethod
     def verify_auth_token(token):
         try:
-            data = jwt.decode(token, app.config['SECRET_KEY'],
-                              algorithms=['HS256'])
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
         except:
             return
         return User.query.get(data['id'])
+
+    @staticmethod
+    def get_reset_password_token(code, expires_in=600):
+        # 给code加密,并赋予实效性
+        return jwt.encode({'code': code, 'exp': time.time() + expires_in}, app.config['SECRET_KEY'], algorithm='HS256')
+
+    @staticmethod
+    def verify_reset_password_code_token(input_code, token):
+        try:
+            true_code = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])['code']
+        except:
+            return False
+        if input_code == true_code:
+            return True
+        else:
+            return False
