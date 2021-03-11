@@ -3,6 +3,7 @@ from ..utils.sql import db
 from ..model.user import User
 from flask_httpauth import HTTPBasicAuth
 from flask_cors import cross_origin
+from ..manage import logger
 
 # us = Blueprint('us', __name__, url_prefix='/api/user')
 us = Blueprint('us', __name__)
@@ -27,6 +28,9 @@ def verify_password(username_or_token, password):
 def login():
     username = request.json.get('username')
     password = request.json.get('password')
+    print("************************"+password)
+
+    logger.info(username+"login")
     if username is None or password is None:
         abort(400)  # missing arguments
     elif User.query.filter_by(username=username).first() is not None:
